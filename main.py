@@ -4,18 +4,6 @@ import logging
 
 # библиотека, которая нам понадобится для работы с JSON
 import json
-import sys
-import traceback
-
-
-def log_uncaught_exceptions(ex_cls, ex, tb):
-    text = ';{}: {}:\n'.format(ex_cls.__name__, ex)
-    text += ''.join(traceback.format_tb(tb))
-    with open('errors.txt', 'a', encoding='utf8') as file:
-        file.write(text)
-
-
-sys.excepthook = log_uncaught_exceptions
 # создаём приложение
 # мы передаём __name__, в нем содержится информация,
 # в каком модуле мы находимся.
@@ -26,7 +14,7 @@ sys.excepthook = log_uncaught_exceptions
 app = Flask(__name__)
 
 # Устанавливаем уровень логирования
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # Создадим словарь, чтобы для каждой сессии общения
 # с навыком хранились подсказки, которые видел пользователь.
@@ -42,32 +30,30 @@ sessionStorage = {}
 
 
 @app.route('/post', methods=['GET', 'POST'])
-# Функция получает тело запроса и возвращает ответ.
-# Внутри функции доступен request.json - это JSON,
-# который отправила нам Алиса в запросе POST
 def main():
-    logging.info(f'Request: {request.json!r}')
+    if request.method == "POST":
+        logging.info(f'Request: {request.json!r}')
 
-    # Начинаем формировать ответ, согласно документации
-    # мы собираем словарь, который потом при помощи
-    # библиотеки json преобразуем в JSON и отдадим Алисе
-    response = {
-        'session': request.json['session'],
-        'version': request.json['version'],
-        'response': {
-            'end_session': False
+        # Начинаем формировать ответ, согласно документации
+        # мы собираем словарь, который потом при помощи
+        # библиотеки json преобразуем в JSON и отдадим Алисе
+        response = {
+            'session': request.json['session'],
+            'version': request.json['version'],
+            'response': {
+                'end_session': False
+            }
         }
-    }
 
-    # Отправляем request.json и response в функцию handle_dialog.
-    # Она сформирует оставшиеся поля JSON, которые отвечают
-    # непосредственно за ведение диалога
-    handle_dialog(request.json, response)
+        # Отправляем request.json и response в функцию handle_dialog.
+        # Она сформирует оставшиеся поля JSON, которые отвечают
+        # непосредственно за ведение диалога
+        handle_dialog(request.json, response)
 
-    logging.info(f'Response:  {response!r}')
+        logging.info(f'Response:  {response!r}')
 
-    # Преобразовываем в JSON и возвращаем
-    return json.dumps(response)
+        # Преобразовываем в JSON и возвращаем
+        return json.dumps(response)
 
 
 def handle_dialog(req, res):
