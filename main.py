@@ -4,7 +4,18 @@ import logging
 
 # библиотека, которая нам понадобится для работы с JSON
 import json
+import sys
+import traceback
 
+
+def log_uncaught_exceptions(ex_cls, ex, tb):
+    text = ';{}: {}:\n'.format(ex_cls.__name__, ex)
+    text += ''.join(traceback.format_tb(tb))
+    with open('errors.txt', 'a', encoding='utf8') as file:
+        file.write(text)
+
+
+sys.excepthook = log_uncaught_exceptions
 # создаём приложение
 # мы передаём __name__, в нем содержится информация,
 # в каком модуле мы находимся.
