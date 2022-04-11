@@ -1,12 +1,31 @@
 from flask import Flask, request
 import logging
 import json
+
+yes_repr = [
+        'ладно',
+        'куп',
+        'хорошо',
+        'хот',
+        'хоч'
+    ]
+
+no_repr = [
+        'не',
+        'хуй',
+        'отстань'
+    ]
+
+animals = ['слон', 'кролик']
+animals_index = 0
+url_ = "https://market.yandex.ru/search?text="
+
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 sessionStorage = {}
 
 
-@app.route('/post', methods=['POST'])
+@app.route('/', methods=['POST'])
 def main():
     logging.info(f'Request: {request.json!r}')
     response = {
@@ -29,6 +48,7 @@ def main():
 
 
 def handle_dialog(req, res):
+    global animals_index
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -39,25 +59,22 @@ def handle_dialog(req, res):
                 "Отстань!",
             ]
         }
-        res['response']['text'] = 'Привет! Купи слона!'
+        res['response']['text'] = f'Привет! Купи {animals[animals_index]}а!'
         res['response']['buttons'] = get_suggests(user_id)
         return
-    if req['request']['original_utterance'].lower() in [
-        'ладно',
-        'куплю',
-        'покупаю',
-        'хорошо'
-    ]:
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
-        res['response']['end_session'] = True
+    replica = req['request']['original_utterance'].lower()
+    if any([i in replica for i in yes_repr]) and all([i not in replica for i in no_repr]):
+        res['response']['text'] = f'{animals[animals_index]}а можно найти на Яндекс.Маркете!'
+        animals_index = (animals_index + 1) % 2
         return
     res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
+        f"Все говорят '{req['request']['original_utterance']}', а ты купи {animals[animals_index]}а!"
     res['response']['buttons'] = get_suggests(user_id)
 
 
 # Функция возвращает две подсказки для ответа.
 def get_suggests(user_id):
+    global animals_index
     session = sessionStorage[user_id]
 
     # Выбираем две первые подсказки из массива.
@@ -75,7 +92,7 @@ def get_suggests(user_id):
     if len(suggests) < 2:
         suggests.append({
             "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=слон",
+            "url": f"https://market.yandex.ru/search?text={animals[animals_index]}",
             "hide": True
         })
 
@@ -83,4 +100,4 @@ def get_suggests(user_id):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8080, host='127.0.0.1')
